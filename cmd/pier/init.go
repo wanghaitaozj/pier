@@ -112,6 +112,11 @@ var initCMD = cli.Command{
 			},
 			Action: initPier,
 		},
+		{
+			Name:   "directChain",
+			Usage:  "Initialize pier directChain mode configuration",
+			Action: initPier,
+		},
 	},
 }
 
@@ -186,6 +191,8 @@ func initPier(ctx *cli.Context) error {
 		}
 		vpr.Set("mode.type", "union")
 
+	case "directChain":
+		vpr.Set("mode.type", "directChain")
 	}
 
 	if err := updateInitOptions(ctx, vpr, repoRoot); err != nil {

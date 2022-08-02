@@ -153,7 +153,7 @@ func (ex *Exchanger) Start() error {
 		}
 	}
 
-	if repo.UnionMode == ex.mode {
+	if repo.UnionMode == ex.mode || repo.DirectChainMode == ex.mode {
 		ex.recoverUnion(ex.srcServiceMeta, ex.destServiceMeta)
 		// add self_interchains to srcServiceMeta
 		ex.fillSelfInterchain()

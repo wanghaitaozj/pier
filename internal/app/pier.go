@@ -227,6 +227,40 @@ func NewPier(repoRoot string, config *repo.Config) (*Pier, error) {
 		}
 
 		pierHA = single.New(nil, DEFAULT_UNION_PIER_ID)
+	case repo.DirectChainMode:
+		client1, err := newBitXHubClient1(logger, privateKey, config)
+		if err != nil {
+			return nil, fmt.Errorf("create bitxhub client: %w", err)
+		}
+
+		bxhAdapter1, err := bxh_adapter.New(repo.DirectChainMode, "leafChain", client1, loggers.Logger(loggers.Syncer), config.TSS)
+		if err != nil {
+			return nil, fmt.Errorf("new bitxhub adapter: %w", err)
+		}
+		client2, err := newBitXHubClient2(logger, privateKey, config)
+		if err != nil {
+			return nil, fmt.Errorf("create bitxhub client: %w", err)
+		}
+
+		bxhAdapter2, err := bxh_adapter.New(repo.DirectChainMode, "rootChain", client2, loggers.Logger(loggers.Syncer), config.TSS)
+		if err != nil {
+			return nil, fmt.Errorf("new bitxhub adapter: %w", err)
+		}
+
+		peerManager, err = peermgr.New(config, nodePrivKey, privateKey, 1, loggers.Logger(loggers.PeerMgr))
+		if err != nil {
+			return nil, fmt.Errorf("peerMgr create: %w", err)
+		}
+
+		ex, err = exchanger.New(repo.DirectChainMode, "", bxhAdapter1.ID(),
+			exchanger.WithSrcAdapt(bxhAdapter1),
+			exchanger.WithDestAdapt(bxhAdapter2),
+			exchanger.WithLogger(loggers.Logger(loggers.Exchanger)))
+		if err != nil {
+			return nil, fmt.Errorf("exchanger create: %w", err)
+		}
+
+		pierHA = single.New(nil, "test_pier")
 	default:
 		return nil, fmt.Errorf("unsupported mode")
 	}
@@ -335,6 +369,52 @@ func newBitXHubClient(logger logrus.FieldLogger, privateKey crypto.PrivateKey, c
 	} else if strings.EqualFold(repo.UnionMode, config.Mode.Type) {
 		addrs = config.Mode.Union.Addrs
 	}
+	nodesInfo := make([]*rpcx.NodeInfo, 0, len(addrs))
+	for index, addr := range addrs {
+		nodeInfo := &rpcx.NodeInfo{Addr: addr}
+		if config.Security.EnableTLS {
+			nodeInfo.CertPath = filepath.Join(config.RepoRoot, config.Security.Tlsca)
+			nodeInfo.EnableTLS = config.Security.EnableTLS
+			nodeInfo.CommonName = config.Security.CommonName
+			nodeInfo.AccessCert = filepath.Join(config.RepoRoot, config.Security.AccessCert[index])
+			nodeInfo.AccessKey = filepath.Join(config.RepoRoot, config.Security.AccessKey)
+		}
+		nodesInfo = append(nodesInfo, nodeInfo)
+	}
+	opts = append(opts, rpcx.WithNodesInfo(nodesInfo...), rpcx.WithTimeoutLimit(config.Mode.Relay.TimeoutLimit))
+	return rpcx.New(opts...)
+}
+
+func newBitXHubClient1(logger logrus.FieldLogger, privateKey crypto.PrivateKey, config *repo.Config) (rpcx.Client, error) {
+	opts := []rpcx.Option{
+		rpcx.WithLogger(logger),
+		rpcx.WithPrivateKey(privateKey),
+	}
+	addrs := make([]string, 0)
+	addrs = config.Mode.DirectChain.SrcAddrs
+	nodesInfo := make([]*rpcx.NodeInfo, 0, len(addrs))
+	for index, addr := range addrs {
+		nodeInfo := &rpcx.NodeInfo{Addr: addr}
+		if config.Security.EnableTLS {
+			nodeInfo.CertPath = filepath.Join(config.RepoRoot, config.Security.Tlsca)
+			nodeInfo.EnableTLS = config.Security.EnableTLS
+			nodeInfo.CommonName = config.Security.CommonName
+			nodeInfo.AccessCert = filepath.Join(config.RepoRoot, config.Security.AccessCert[index])
+			nodeInfo.AccessKey = filepath.Join(config.RepoRoot, config.Security.AccessKey)
+		}
+		nodesInfo = append(nodesInfo, nodeInfo)
+	}
+	opts = append(opts, rpcx.WithNodesInfo(nodesInfo...), rpcx.WithTimeoutLimit(config.Mode.Relay.TimeoutLimit))
+	return rpcx.New(opts...)
+}
+
+func newBitXHubClient2(logger logrus.FieldLogger, privateKey crypto.PrivateKey, config *repo.Config) (rpcx.Client, error) {
+	opts := []rpcx.Option{
+		rpcx.WithLogger(logger),
+		rpcx.WithPrivateKey(privateKey),
+	}
+	addrs := make([]string, 0)
+	addrs = config.Mode.DirectChain.DestAddrs
 	nodesInfo := make([]*rpcx.NodeInfo, 0, len(addrs))
 	for index, addr := range addrs {
 		nodeInfo := &rpcx.NodeInfo{Addr: addr}

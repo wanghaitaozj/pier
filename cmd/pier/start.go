@@ -56,7 +56,7 @@ func start(ctx *cli.Context) error {
 	// init loggers map for pier
 	loggers.InitializeLogger(config)
 
-	if config.Mode.Type != repo.UnionMode {
+	if config.Mode.Type != repo.UnionMode && config.Mode.Type != repo.DirectChainMode {
 		if err := checkPlugin(config.Appchain.Plugin); err != nil {
 			return fmt.Errorf("check plugin: %w", err)
 		}

@@ -52,16 +52,18 @@ type TSS struct {
 }
 
 const (
-	DirectMode = "direct"
-	RelayMode  = "relay"
-	UnionMode  = "union"
+	DirectMode      = "direct"
+	RelayMode       = "relay"
+	UnionMode       = "union"
+	DirectChainMode = "directChain"
 )
 
 type Mode struct {
-	Type   string `toml:"type" json:"type"`
-	Relay  Relay  `toml:"relay" json:"relay"`
-	Direct Direct `toml:"direct" json:"direct"`
-	Union  Union  `toml:"union" json:"union"`
+	Type        string      `toml:"type" json:"type"`
+	Relay       Relay       `toml:"relay" json:"relay"`
+	Direct      Direct      `toml:"direct" json:"direct"`
+	Union       Union       `toml:"union" json:"union"`
+	DirectChain DirectChain `toml:"directChain" json:"directChain"`
 }
 
 // Relay are configs about bitxhub
@@ -80,6 +82,16 @@ type Direct struct {
 type Union struct {
 	Addrs     []string `toml:"addrs" json:"addrs"`
 	Providers uint64   `toml:"providers" json:"providers"`
+}
+
+type DirectChain struct {
+	SrcAddrs  []string `toml:"srcaddrs" json:"srcaddrs"`
+	DestAddrs []string `toml:"destaddrs" json:"destaddrs"`
+	//TimeoutLimit               time.Duration `mapstructure:"timeout_limit" json:"timeout_limit"`
+	//Quorum                     uint64        `toml:"quorum" json:"quorum"`
+	SrcBitXHubID  string `mapstructure:"src_bitxhub_id" json:"src_bitxhub_id"`
+	DestBitXHubID string `mapstructure:"dest_bitxhub_id" json:"dest_bitxhub_id"`
+	//EnableOffChainTransmission bool          `mapstructure:"enable_offchain_transmission"`
 }
 
 // Log are config about log
